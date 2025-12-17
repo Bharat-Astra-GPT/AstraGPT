@@ -1,7 +1,6 @@
 streamlit
 groq
 google-generativeai
+fpdf2
 Pillow
-fpdf
-python-docx
 requests
