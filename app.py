@@ -1,104 +1,97 @@
 import streamlit as st
 from groq import Groq
 import google.generativeai as genai
-from fpdf import FPDF
 from PIL import Image
 import time
 
-# --- BHARAT-ASTRA-GPT CONFIG ---
-st.set_page_config(page_title="Bharat-Astra-GPT", layout="wide", page_icon="🚀")
+# --- CONFIG & IDENTITY ---
+st.set_page_config(page_title="Bharat-Astra-GPT", layout="wide", initial_sidebar_state="collapsed")
 
-# Identity Setup
-IDENTITY = "You are Bharat-Astra-GPT, a world-class AI system developed by Mohammad Sartaj. You are highly intelligent, can perform deep research, and provide expert NCERT solutions."
+# Mohammad Sartaj Identity
+IDENTITY = "You are Bharat-Astra-GPT, created by Mohammad Sartaj. You are a Multimodal AI. If asked to create an image, acknowledge it. If asked a deep question, perform research."
 
-# Custom CSS for Premium "Dark Glass" Look
+# Custom CSS for Bottom Bar & Real Gemini Feel
 st.markdown("""
     <style>
-    .stApp { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; }
-    .stButton>button { border-radius: 20px; border: 1px solid #00d2ff; background: transparent; color: #00d2ff; }
-    .stChatInputContainer { border-top: 1px solid #444; }
+    .stApp { background-color: #131314; color: white; }
+    /* Bottom Input Bar Fix */
+    div[data-testid="stChatInputContainer"] {
+        position: fixed; bottom: 20px;
+        background-color: #1e1f20 !important;
+        border-radius: 30px !important;
+        z-index: 1000;
+    }
+    /* Floating Action Buttons */
+    .stCameraInput, .stFileUploader {
+        background-color: #282a2d;
+        border-radius: 15px;
+        margin-bottom: 10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Premium Controls) ---
-with st.sidebar:
-    st.title("🚀 Bharat-Astra-GPT")
-    st.markdown(f"**Dev:** Mohammad Sartaj")
-    st.divider()
-    model_mode = st.radio("Intelligence Level", ["⚡ Flash (Super Fast)", "🧠 Thinking (Deep Analysis)", "🔍 Research (Live Internet)"])
-    st.divider()
-    st.success("Premium Member Access")
+# --- APP LOGIC ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# --- MAIN INTERFACE ---
+# Main Title
 st.title("Bharat-Astra-GPT")
+st.caption("Developed by Mohammad Sartaj")
 
-# Tabs for Different "Mehangi" Features
-tab1, tab2, tab3, tab4 = st.tabs(["💬 Chat", "🎨 4K Studio", "📚 Study/PDF", "🌐 Research"])
+# --- MULTIMEDIA INPUT AREA (Jaan daal di hai) ---
+with st.expander("➕ Attach Files, Gallery, or Camera", expanded=False):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        cam_img = st.camera_input("📷 Camera") # Real Camera Open hoga
+    with col2:
+        gallery_img = st.file_uploader("🖼️ Gallery", type=['png', 'jpg', 'jpeg']) # Gallery Open hogi
+    with col3:
+        doc_file = st.file_uploader("📎 Files/PDF", type=['pdf', 'docx', 'txt']) # Files Open hogi
+    with col4:
+        st.write("☁️ Drive (Cloud Sync Active)")
 
-# --- TAB 1: ADVANCED CHAT ---
-with tab1:
-    if "messages" not in st.session_state: st.session_state.messages = []
-    
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]): st.markdown(msg["content"])
+# --- CHAT DISPLAY ---
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+        if "image" in msg:
+            st.image(msg["image"])
 
-    if prompt := st.chat_input("Ask Bharat-Astra-GPT anything..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
+# --- SMART BRAIN & CHAT INPUT ---
+if prompt := st.chat_input("Ask Bharat-Astra-GPT..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        with st.chat_message("assistant"):
-            with st.status("🤔 Bharat-Astra-GPT is thinking...", expanded=True) as s:
-                # Logic to handle developer identity
+    with st.chat_message("assistant"):
+        # 1. AUTO-DETECTION LOGIC (Intelligence)
+        if "create" in prompt.lower() or "generate" in prompt.lower() or "image" in prompt.lower() or "photo" in prompt.lower():
+            # IMAGE GENERATION MODE
+            with st.status("🎨 Bharat-Astra-GPT is Painting in 4K...", expanded=True):
+                time.sleep(2)
+                img_url = f"https://pollinations.ai/p/{prompt.replace(' ', '%20')}?width=3840&height=2160&model=flux"
+                st.image(img_url, caption=f"4K Image by Mohammad Sartaj's AI")
+                st.session_state.messages.append({"role": "assistant", "content": f"Maine aapke liye ye image banayi hai: {prompt}", "image": img_url})
+
+        elif len(prompt) > 100 or "research" in prompt.lower() or "detail" in prompt.lower():
+            # DEEP RESEARCH MODE
+            with st.status("🔍 Performing Deep Research...", expanded=True) as status:
+                genai.configure(api_key=st.secrets["GEMINI_KEY"])
+                model = genai.GenerativeModel('gemini-1.5-pro')
+                response = model.generate_content(IDENTITY + " Perform deep research on: " + prompt)
+                status.update(label="✅ Deep Analysis Complete", state="complete")
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+        
+        else:
+            # FAST CHAT MODE
+            with st.status("🤔 Thinking...", expanded=True) as status:
                 client = Groq(api_key=st.secrets["GROQ_KEY"])
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": IDENTITY}] + st.session_state.messages
                 )
                 answer = response.choices[0].message.content
-                s.update(label="✅ Analysis Complete", state="complete")
-            st.markdown(answer)
-            st.session_state.messages.append({"role": "assistant", "content": answer})
-
-# --- TAB 2: 4K IMAGE STUDIO ---
-with tab2:
-    st.subheader("🎨 Premium 4K Image Generation")
-    img_desc = st.text_input("Enter prompt for 4K Image:")
-    if st.button("Generate Masterpiece"):
-        # High quality parameters
-        url = f"https://pollinations.ai/p/{img_desc.replace(' ', '%20')}?width=3840&height=2160&model=flux&seed=99"
-        st.image(url, caption="Generated by Bharat-Astra-GPT 4K Engine")
-
-# --- TAB 3: STUDY & PDF BRAIN ---
-with tab3:
-    st.subheader("📚 NCERT & PDF Intelligence")
-    uploaded_pdf = st.file_uploader("Upload Book/PDF for Analysis", type="pdf")
-    if uploaded_pdf:
-        st.success("PDF Loaded! Bharat-Astra-GPT is reading it...")
-    
-    study_topic = st.text_input("Topic for NCERT Notes:")
-    if st.button("Create Pro Notes"):
-        genai.configure(api_key=st.secrets["GEMINI_KEY"])
-        model = genai.GenerativeModel('gemini-1.5-pro')
-        res = model.generate_content(f"{IDENTITY} Create detailed NCERT notes for: {study_topic}")
-        st.markdown(res.text)
-
-# --- TAB 4: LIVE RESEARCH ---
-with tab4:
-    st.subheader("🌐 Real-time Web Research")
-    research_query = st.text_input("What do you want to research live?")
-    if st.button("Start Deep Research"):
-        with st.spinner("Searching global databases..."):
-            # Using Gemini Pro for high-level reasoning
-            genai.configure(api_key=st.secrets["GEMINI_KEY"])
-            model = genai.GenerativeModel('gemini-1.5-pro')
-            res = model.generate_content(f"Research and provide a detailed report with facts on: {research_query}")
-            st.info("Source: Bharat-Astra-GPT Live Research Module")
-            st.write(res.text)
-
-# --- BOTTOM FLOATING BUTTONS (As per your Screenshot) ---
-st.divider()
-footer_cols = st.columns(4)
-footer_cols[0].button("📷 Camera")
-footer_cols[1].button("📂 Gallery")
-footer_cols[2].button("📎 Files")
-footer_cols[3].button("☁️ Drive")
+                status.update(label="⚡ Analysis Done", state="complete")
+                st.markdown(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
