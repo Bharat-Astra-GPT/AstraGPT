@@ -5,3 +5,4 @@ Pillow
 gTTS
 fpdf
 streamlit-mic-recorder
+python-docx
