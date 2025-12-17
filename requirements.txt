@@ -1,9 +1,7 @@
-streamlit
+flask
+flask-cors
 groq
 google-generativeai
 Pillow
-gTTS
-fpdf
-streamlit-mic-recorder
-python-docx
-pandas
+python-dotenv
+requests
