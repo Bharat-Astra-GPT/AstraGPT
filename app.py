@@ -1,21 +1,22 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 
-# Streamlit ke Secrets se API key lega
-if "GEMINI_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_KEY"])
+# Streamlit Secrets se Groq Key lena
+if "GROQ_KEY" in st.secrets:
+    client = Groq(api_key=st.secrets["GROQ_KEY"])
 else:
-    st.error("Dhyan dein: Streamlit Secrets mein GEMINI_KEY missing hai!")
+    st.error("Please add GROQ_KEY in Streamlit Secrets!")
 
-st.set_page_config(page_title="AstraGPT", page_icon="🚀")
+st.set_page_config(page_title="Bharat Astra GPT", page_icon="🚀")
+st.title("🚀 Bharat Astra GPT (Powered by Groq)")
 
-st.markdown("<h1 style='text-align: center; color: #FF9933;'>🚀 AstraGPT: The Indian AI</h1>", unsafe_allow_html=True)
-
-# Chat Box
-prompt = st.chat_input("Puchiye AstraGPT se kuch bhi...")
+# Chat Interface
+prompt = st.chat_input("Puchiye kuch bhi...")
 
 if prompt:
-    with st.spinner("AstraGPT soch raha hai..."):
-        model = genai.GenerativeModel('gemini-1.5-pro')
-        response = model.generate_content(prompt)
-        st.write(response.text)
+    completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile", # Groq ka sabse powerful model
+        messages=[{"role": "user", "content": prompt}]
+    )
+    st.write(completion.choices[0].message.content)
+    
