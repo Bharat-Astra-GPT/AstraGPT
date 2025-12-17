@@ -4,104 +4,147 @@ import google.generativeai as genai
 from fpdf import FPDF
 import time
 import requests
+from PIL import Image
 
-# --- 1. CONFIG & IDENTITY ---
+# --- CONFIG & IDENTITY ---
 st.set_page_config(page_title="Bharat-Astra-GPT", layout="wide", initial_sidebar_state="collapsed")
-IDENTITY = "You are Bharat-Astra-GPT, created by Mohammad Sartaj. You are an Ultra Pro AI that provides 100% accurate and helpful responses."
+DEVELOPER = "Mohammad Sartaj"
+IDENTITY = f"You are Bharat-Astra-GPT, created by {DEVELOPER}. You provide 100% accurate info."
 
-# --- 2. CSS (Thin Plus & Premium UI) ---
+# --- PREMIUM UI & BOTTOM SHEET CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0b0c; color: #e3e3e3; }
-    .plus-container { position: fixed; bottom: 27px; left: calc(50% - 38%); z-index: 9999; }
-    .thin-plus { font-size: 24px; color: #7f5cff; font-weight: 200; cursor: pointer; }
-    div[data-testid="stChatInputContainer"] textarea { padding-left: 50px !important; }
-    .stStatus { border-radius: 30px !important; background: #1e1f20 !important; }
+    
+    /* Plus Icon Position (Inside Chat Bar - Left) */
+    .plus-container {
+        position: fixed; bottom: 25px; left: calc(50% - 42%);
+        z-index: 10000; cursor: pointer;
+        background: #2a2a2a; border-radius: 50%;
+        width: 40px; height: 40px; display: flex;
+        align-items: center; justify-content: center;
+        transition: 0.3s;
+    }
+    .plus-container:hover { background: #3a3a3a; transform: rotate(90deg); }
+    
+    /* Chat Input Padding for Plus Icon */
+    div[data-testid="stChatInputContainer"] textarea {
+        padding-left: 55px !important;
+    }
+
+    /* Bottom Sheet Menu Styling */
+    .bottom-sheet {
+        background: #1e1f20; border-radius: 25px 25px 0 0;
+        padding: 20px; border-top: 1px solid #444;
+    }
+    
+    .icon-label { font-size: 12px; text-align: center; color: #aaa; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. CORE FUNCTIONS (Real Working Rooh) ---
+# --- REAL WORKING FUNCTIONS ---
 
-# PDF Generator Function
-def create_pdf(text, filename="Astra_Ebook.pdf"):
+def generate_pdf(text):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt=text)
-    pdf.output(filename)
-    return filename
+    # Cleaning for Latin-1 encoding to prevent errors
+    clean_text = text.encode('latin-1', 'ignore').decode('latin-1')
+    pdf.multi_cell(0, 10, txt=clean_text)
+    pdf.output("Astra_Notes.pdf")
+    return "Astra_Notes.pdf"
 
-# --- 4. APP LOGIC ---
+# --- APP LOGIC ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("Bharat-Astra-GPT 🚀")
-st.caption("Developed by Mohammad Sartaj | 100% Working Edition")
+st.caption(f"100% Working Edition | Dev: {DEVELOPER}")
 
-# --- 5. PLUS MENU (Real Features) ---
-with st.sidebar:
-    st.header("➕ Tools Menu")
-    mode = st.radio("Select Mode", ["Chat", "Deep Research", "E-Book Maker", "Code Master"])
+# --- 🟢 THE REAL PLUS MENU (BOTTOM SHEET) ---
+# Streamlit mein "Bottom Sheet" ke liye hum Expander ko chat bar ke upar use karte hain
+with st.expander("✨ Select Action (Camera, Gallery, Quiz, Research)", expanded=False):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        cam = st.button("📷\nCam")
+    with col2:
+        gal = st.button("🖼️\nGallery")
+    with col3:
+        quiz = st.button("📎\nQuiz")
+    with col4:
+        drive = st.button("📂\nDrive")
+    
     st.divider()
-    if st.button("🖼 Create 4K Image"):
-        st.session_state.img_mode = True
-        st.info("Ab chat mein prompt likho, main 4K photo banaunga!")
+    deep_res = st.toggle("🔍 Deep Research Mode")
+    canvas_mode = st.toggle("🎨 Canvas (Drawing Mode)")
 
-st.markdown('<div class="plus-container"><span class="thin-plus">＋</span></div>', unsafe_allow_html=True)
+# Floating Visual Plus (Just for UI look)
+st.markdown('<div class="plus-container"><span style="color:white;font-size:24px;">+</span></div>', unsafe_allow_html=True)
 
-# Chat History Display
+# Handle Special Modes
+if canvas_mode:
+    st.info("🎨 Canvas Mode: Ab aap whiteboard par draw kar sakte hain (Coming with st-canvas integration).")
+
+# Display Chat History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if "img" in msg: st.image(msg["img"])
 
-# --- 6. SMART BRAIN (Reply & Generation Logic) ---
+# --- 🧠 BRAIN (CHATTING & GENERATION) ---
 if prompt := st.chat_input("Ask anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # A. IMAGE GENERATION (WORKING 100%)
-        if "create image" in prompt.lower() or "generate photo" in prompt.lower():
-            with st.status("🎨 Creating 4K Masterpiece...", expanded=True) as s:
-                # Adding anatomy fix keywords automatically
-                enhanced_prompt = f"{prompt}, hyper-realistic, 8k, perfect anatomy, high detail face"
-                img_url = f"https://pollinations.ai/p/{enhanced_prompt.replace(' ', '%20')}?width=1024&height=1024&model=flux"
-                st.image(img_url)
-                s.update(label="✅ Image Created!", state="complete")
-                res = "Maine aapke liye ye image banayi hai."
-                st.session_state.messages.append({"role": "assistant", "content": res, "img": img_url})
-
-        # B. PDF / E-BOOK GENERATION (WORKING 100%)
-        elif "pdf" in prompt.lower() or "ebook" in prompt.lower():
-            with st.status("📄 Generating Professional PDF...", expanded=True) as s:
+        # 1. DEEP RESEARCH MODE
+        if deep_res:
+            with st.status("🔍 Deep Researching Global Sources...", expanded=True) as s:
                 client = Groq(api_key=st.secrets["GROQ_KEY"])
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": "Create a detailed eBook content for this topic."}] + st.session_state.messages
+                    messages=[{"role": "system", "content": "Provide a heavy, factual, and long research report with citations."}] + st.session_state.messages
+                )
+                ans = response.choices[0].message.content
+                s.update(label="✅ Research Complete", state="complete")
+                st.markdown(ans)
+                st.session_state.messages.append({"role": "assistant", "content": ans})
+
+        # 2. IMAGE GENERATION
+        elif "photo" in prompt.lower() or "image" in prompt.lower() or "generate" in prompt.lower():
+            with st.status("🎨 Creating 4K Realistic Image...", expanded=True) as s:
+                img_url = f"https://pollinations.ai/p/{prompt.replace(' ', '%20')}?width=1024&height=1024&model=flux"
+                st.image(img_url)
+                s.update(label="✅ Image Ready", state="complete")
+                res = "Aapka masterpiece taiyar hai."
+                st.session_state.messages.append({"role": "assistant", "content": res, "img": img_url})
+
+        # 3. PDF/E-BOOK GENERATION
+        elif "pdf" in prompt.lower() or "ebook" in prompt.lower():
+            with st.status("📄 Formatting PDF...", expanded=True) as s:
+                client = Groq(api_key=st.secrets["GROQ_KEY"])
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "system", "content": "Write high-quality educational notes for PDF."}] + st.session_state.messages
                 )
                 content = response.choices[0].message.content
-                pdf_file = create_pdf(content)
-                with open(pdf_file, "rb") as f:
-                    st.download_button("📩 Download Your E-Book", f, file_name=pdf_file)
-                s.update(label="✅ PDF Ready!", state="complete")
+                pdf_path = generate_pdf(content)
+                with open(pdf_path, "rb") as f:
+                    st.download_button("📩 Download PDF", f, file_name="Astra_Notes.pdf")
+                s.update(label="✅ PDF Generated", state="complete")
                 st.markdown(content)
                 st.session_state.messages.append({"role": "assistant", "content": content})
 
-        # C. REAL CHAT REPLY (WORKING 100%)
+        # 4. SIMPLE CHAT
         else:
             with st.status("🧠 Analyzing...", expanded=True) as s:
-                try:
-                    client = Groq(api_key=st.secrets["GROQ_KEY"])
-                    response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[{"role": "system", "content": IDENTITY}] + st.session_state.messages
-                    )
-                    ans = response.choices[0].message.content
-                    s.update(label="✅ Done", state="complete")
-                    st.markdown(ans)
-                    st.session_state.messages.append({"role": "assistant", "content": ans})
-                except Exception as e:
-                    st.error("Bhai API Key check karo, connect nahi ho raha!")
-
+                client = Groq(api_key=st.secrets["GROQ_KEY"])
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "system", "content": IDENTITY}] + st.session_state.messages
+                )
+                ans = response.choices[0].message.content
+                s.update(label="✅ Done", state="complete")
+                st.markdown(ans)
+                st.session_state.messages.append({"role": "assistant", "content": ans})
