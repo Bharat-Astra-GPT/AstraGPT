@@ -1,7 +1,7 @@
-flask
-flask-cors
+streamlit
 groq
 google-generativeai
 Pillow
-python-dotenv
+fpdf
+python-docx
 requests
