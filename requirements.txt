@@ -1,5 +1,2 @@
 streamlit
-streamlit-extras
 pillow
-google-generativeai
-python-dotenv
