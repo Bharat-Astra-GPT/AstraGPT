@@ -68,36 +68,4 @@ const CustomAIInterface = () => {
       </div>
     </div>
   );
-};
-
-export default CustomAIInterface;
-import streamlit as st
-
-st.set_page_config(
-    page_title="Bharat Astra GPT",
-    page_icon="🤖",
-    layout="wide"
-)
-
-st.title("🚀 Bharat Astra GPT")
-st.write("App is running successfully!")
-import streamlit as st
-import google.generativeai as genai
-
-st.set_page_config(
-    page_title="Bharat Astra GPT",
-    page_icon="➕",
-    layout="wide"
-)
-
-st.title("🤖 Bharat Astra GPT")
-
-prompt = st.text_input(
-    "Ask something...",
-    placeholder="Type here..."
-)
-
-if st.button("➕"):
-    st.write("Button clicked!")
-
-st.success("App Loaded Successfully ✅")                                      
+};                                     
