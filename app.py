@@ -11,104 +11,75 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "show_plus" not in st.session_state:
-    st.session_state.show_plus = False
+if "show_menu" not in st.session_state:
+    st.session_state.show_menu = False
 
-# ================= PREMIUM THEME =================
+# ================= THEME =================
 st.markdown("""
 <style>
-/* ---- BACKGROUND ---- */
-body {
-    background: radial-gradient(circle at top, #0b1220, #020617);
+.stApp { background-color:#0d0d0f; color:white; }
+
+.chat-wrap {
+    max-width:820px;
+    margin:auto;
+    padding-bottom:160px;
 }
 
-/* ---- CONTAINER ---- */
-.chat-container {
-    max-width: 880px;
-    margin: auto;
-    padding-bottom: 140px;
-}
-
-/* ---- MESSAGE ---- */
 .msg {
-    padding: 14px 18px;
-    border-radius: 18px;
-    margin-bottom: 12px;
-    font-size: 15px;
-    line-height: 1.5;
-    animation: fadeIn 0.25s ease-in;
+    padding:14px 18px;
+    border-radius:14px;
+    margin-bottom:12px;
+    font-size:15px;
 }
 .user {
-    background: #0f172a;
-    border-left: 4px solid #38bdf8;
-    color: #e5e7eb;
+    background:#1a1a1c;
+    border:1px solid #2d2d2f;
+    margin-left:auto;
 }
 .bot {
-    background: #111827;
-    border-left: 4px solid #a78bfa;
-    color: #e5e7eb;
+    background:#0d0d0f;
+    border:1px solid #1f1f22;
+    color:#cfcfcf;
 }
 
-/* ---- INPUT BOARD ---- */
-.input-wrap {
-    position: fixed;
-    bottom: 18px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
+.bottom-bar {
+    position:fixed;
+    bottom:18px;
+    left:0;
+    right:0;
+    display:flex;
+    justify-content:center;
 }
 
-.input-board {
-    width: 880px;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(10px);
-    border-radius: 22px;
-    padding: 10px;
-    box-shadow: 0 0 0 1px #1f2937;
+.bar-inner {
+    width:92%;
+    max-width:820px;
+    background:#1a1a1c;
+    border-radius:24px;
+    padding:10px 12px;
+    border:1px solid #2d2d2f;
 }
 
-/* ---- BUTTONS ---- */
-.icon-btn {
-    background: #1e293b;
-    border: none;
-    color: white;
-    font-size: 18px;
-    padding: 9px 13px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-.icon-btn:hover {
-    background: #334155;
+.popup {
+    background:#1a1a1c;
+    border:1px solid #2d2d2f;
+    border-radius:18px;
+    padding:10px;
+    margin-bottom:10px;
 }
 
-/* ---- PLUS PANEL ---- */
-.plus-panel {
-    background: #020617;
-    border-radius: 16px;
-    padding: 10px;
-    margin-bottom: 10px;
-    box-shadow: 0 0 0 1px #1f2937;
+.popup div {
+    padding:10px 14px;
+    border-radius:12px;
 }
-.plus-item {
-    padding: 10px 14px;
-    border-radius: 12px;
-    background: #0f172a;
-    margin-bottom: 8px;
-    color: #e5e7eb;
-    font-size: 14px;
-}
-
-/* ---- ANIMATION ---- */
-@keyframes fadeIn {
-    from { opacity:0; transform:translateY(6px); }
-    to { opacity:1; transform:translateY(0); }
+.popup div:hover {
+    background:#2a2a2c;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ================= CHAT =================
-st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+st.markdown("<div class='chat-wrap'>", unsafe_allow_html=True)
 
 for m in st.session_state.messages:
     cls = "user" if m["role"] == "user" else "bot"
@@ -117,38 +88,38 @@ for m in st.session_state.messages:
         unsafe_allow_html=True
     )
 
-# ================= PLUS PANEL =================
-if st.session_state.show_plus:
+# ================= POPUP MENU =================
+if st.session_state.show_menu:
     st.markdown("""
-    <div class="plus-panel">
-        <div class="plus-item">📷 Camera</div>
-        <div class="plus-item">🖼️ Gallery</div>
-        <div class="plus-item">📁 File</div>
-        <div class="plus-item">☁️ Drive</div>
+    <div class="popup">
+        <div>📷 Camera</div>
+        <div>🖼️ Gallery</div>
+        <div>📂 File</div>
+        <div>☁️ Drive</div>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# ================= INPUT FIXED BOARD =================
-st.markdown("<div class='input-wrap'>", unsafe_allow_html=True)
+# ================= INPUT BAR =================
+st.markdown("<div class='bottom-bar'>", unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1,6,1])
+c1, c2, c3 = st.columns([1,6,1])
 
-with col1:
+with c1:
     if st.button("➕"):
-        st.session_state.show_plus = not st.session_state.show_plus
+        st.session_state.show_menu = not st.session_state.show_menu
 
-with col2:
+with c2:
     text = st.text_area(
         "",
-        placeholder="Message Bharat Astra GPT…",
+        placeholder="Ask Bharat Astra GPT…",
         height=55,
         label_visibility="collapsed"
     )
 
-with col3:
-    send = st.button("✨")
+with c3:
+    send = st.button("➤")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -160,7 +131,7 @@ if send and text.strip():
     })
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "🤖 Ultra-Pro response placeholder."
+        "content": "🤖 Astra GPT received your message."
     })
-    st.session_state.show_plus = False
+    st.session_state.show_menu = False
     st.rerun()
