@@ -1,158 +1,157 @@
 import streamlit as st
 
-# Mohammad Sartaj's Astra GPT - Professional Setup
-st.set_page_config(page_title="Bharat Astra GPT", layout="wide")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="Bharat Astra GPT",
+    layout="wide"
+)
 
-# State Management for Pop-ups
-if "plus_open" not in st.session_state: st.session_state.plus_open = False
-if "dash_open" not in st.session_state: st.session_state.dash_open = False
-if "messages" not in st.session_state: st.session_state.messages = []
+# ---------------- SESSION STATE ----------------
+if "show_plus" not in st.session_state:
+    st.session_state.show_plus = False
 
-# --- CSS: DESIGN MEIN ROOH ---
+if "show_dashboard" not in st.session_state:
+    st.session_state.show_dashboard = False
+
+if "mode" not in st.session_state:
+    st.session_state.mode = "fast"  # fast | research | image
+
+# ---------------- CSS (EXACT DARK UI) ----------------
 st.markdown("""
 <style>
-    .stApp { background-color: #0d0d0f; color: white; }
-    header, footer, .stSidebar { visibility: hidden; }
+.stApp{
+    background:#0d0d0f;
+    color:white;
+}
 
-    /* Main Floating Container */
-    .main-footer-container {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 92%;
-        max-width: 700px;
-        background: #1a1a1c;
-        border-radius: 30px;
-        padding: 10px 20px;
-        border: 1px solid #2d2d2f;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        z-index: 9999;
-    }
+.bottom-bar{
+    position:fixed;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    width:95%;
+    max-width:520px;
+    background:#1a1a1c;
+    border-radius:30px;
+    padding:12px;
+    border:1px solid #2d2d2f;
+}
 
-    /* Input Box Inside Container */
-    .input-wrapper {
-        display: flex;
-        align-items: center;
-        background: transparent;
-        margin-bottom: 5px;
-    }
+.row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
 
-    /* Icon Rows */
-    .icon-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 5px;
-        padding-top: 5px;
-        border-top: 1px solid #2d2d2f;
-    }
-    
-    .icon-group { display: flex; align-items: center; gap: 20px; }
+.icon{
+    cursor:pointer;
+    font-size:20px;
+    padding:6px 10px;
+}
 
-    /* Plus Pop-up (The White Menu) */
-    .attachment-card {
-        position: absolute;
-        bottom: 110%;
-        left: 0;
-        width: 100%;
-        background: #ffffff;
-        border-radius: 25px;
-        padding: 20px;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-        animation: slideUp 0.3s ease-out;
-    }
+.input{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:white;
+    font-size:16px;
+    outline:none;
+}
 
-    /* Dashboard Pop-up (The Glassy Menu) */
-    .dashboard-card {
-        position: absolute;
-        bottom: 110%;
-        right: 0;
-        width: 250px;
-        background: rgba(30, 30, 32, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid #3d3d3f;
-        border-radius: 20px;
-        padding: 15px;
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-        animation: fadeIn 0.3s ease-out;
-    }
+.popup{
+    background:#f0f2f5;
+    color:black;
+    border-radius:18px;
+    padding:15px;
+    margin-bottom:10px;
+}
 
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    text-align:center;
+}
 
-    .menu-item { text-align: center; color: #333; font-size: 12px; font-weight: bold; cursor: pointer; }
-    .circle-icon { background: #f0f2f5; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-size: 20px; }
-    
-    .dash-btn { color: #d1d1d1; padding: 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; }
-    .dash-btn:hover { background: #2d2d2f; color: white; }
-
-    /* Gemini Send Button Animation */
-    .send-btn-active { color: #fff !important; cursor: pointer; }
+.mode-btn{
+    padding:8px;
+    border-radius:10px;
+    margin-bottom:8px;
+    background:#e4e6eb;
+    cursor:pointer;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# --- CHAT INTERFACE ---
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.write(m["content"])
+# ---------------- TITLE ----------------
+st.markdown("<h2 style='text-align:center;'>Astra GPT</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;opacity:0.6;'>AI by Mohammad Sartaj</p>", unsafe_allow_html=True)
 
-# --- THE DYNAMIC INTERFACE ---
-st.markdown('<div class="main-footer-container">', unsafe_allow_html=True)
-
-# 1. Plus Pop-up Card
-if st.session_state.plus_open:
+# ---------------- PLUS POPUP ----------------
+if st.session_state.show_plus:
     st.markdown("""
-    <div class="attachment-card">
-        <div class="menu-item"><div class="circle-icon">📷</div>Camera</div>
-        <div class="menu-item"><div class="circle-icon">🖼️</div>Gallery</div>
-        <div class="menu-item"><div class="circle-icon">📎</div>Files</div>
-        <div class="menu-item"><div class="circle-icon">☁️</div>Drive</div>
+    <div class="popup">
+        <div class="grid">
+            📷 Camera
+            🖼 Gallery
+            📎 Files
+            ☁️ Drive
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Dashboard Pop-up Card
-if st.session_state.dash_open:
+# ---------------- DASHBOARD POPUP ----------------
+if st.session_state.show_dashboard:
     st.markdown("""
-    <div class="dashboard-card">
-        <div style="font-size:14px; margin-bottom:10px; opacity:0.7;">Dashboard Dashboard ☰</div>
-        <div class="dash-btn">🖼️ Create Images</div>
-        <div class="dash-btn">🔍 Research</div>
-        <div class="dash-btn">💡 Thinking</div>
-        <div class="dash-btn">⚙️ Settings</div>
+    <div class="popup">
+        ⚡ Fast Reply<br><br>
+        🔍 Research<br><br>
+        🎨 Create Image
     </div>
     """, unsafe_allow_html=True)
 
-# 3. Input & Send Area
-col_text, col_send = st.columns([9, 1])
-with col_text:
-    user_input = st.text_input("", placeholder="Ask Bharat Astra GPT...", key="main_input", label_visibility="collapsed")
-with col_send:
-    if st.button("❯", key="send_logic"): # Gemini Style Send
-        if user_input:
-            st.session_state.messages.append({"role": "user", "content": user_input})
-            st.session_state.messages.append({"role": "assistant", "content": f"Sartaj's Astra AI processing: {user_input}"})
-            st.session_state.plus_open = False
-            st.session_state.dash_open = False
-            st.rerun()
+# ---------------- INPUT ----------------
+query = st.text_input("", placeholder="Ask Bharat Astra GPT...")
 
-# 4. Bottom Icons Row
-c1, c2, c3, c4 = st.columns([1, 1, 6, 1])
-with c1:
-    if st.button("＋", key="p_btn"):
-        st.session_state.plus_open = not st.session_state.plus_open
-        st.session_state.dash_open = False
-        st.rerun()
-with c2:
-    if st.button("⚙️", key="s_btn"): # Setting icon as Dashboard trigger
-        st.session_state.dash_open = not st.session_state.dash_open
-        st.session_state.plus_open = False
-        st.rerun()
-with c4:
-    st.button("🎤", key="m_btn")
+# ---------------- SEND BUTTON LOGIC ----------------
+if st.button("Send"):
+    if query:
+        if st.session_state.mode == "fast":
+            st.success("⚡ Fast Reply")
+            st.write(query)
 
-st.markdown('</div>', unsafe_allow_html=True)
-            
+        elif st.session_state.mode == "research":
+            st.success("🔍 Research Mode")
+            st.write("Detailed research on:", query)
+
+        elif st.session_state.mode == "image":
+            st.success("🎨 Image Generation")
+            st.write("Image prompt:", query)
+
+# ---------------- BOTTOM BAR ----------------
+st.markdown("""
+<div class="bottom-bar">
+  <div class="row">
+    <span class="icon">＋</span>
+    <span class="icon">☰</span>
+    <input class="input" placeholder="Ask Bharat Astra GPT...">
+    <span class="icon">🎤</span>
+    <span class="icon">➤</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- CONTROLS ----------------
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("➕ Attach"):
+        st.session_state.show_plus = not st.session_state.show_plus
+        st.session_state.show_dashboard = False
+        st.rerun()
+
+with col2:
+    if st.button("☰ Dashboard"):
+        st.session_state.show_dashboard = not st.session_state.show_dashboard
+        st.session_state.show_plus = False
+        st.rerun()
