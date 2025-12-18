@@ -1,137 +1,166 @@
 import streamlit as st
 
-# Mohammad Sartaj's Astra GPT Setup
-st.set_page_config(page_title="Astra GPT", layout="wide")
+# ================= PAGE CONFIG =================
+st.set_page_config(
+    page_title="Bharat Astra GPT",
+    page_icon="✨",
+    layout="wide"
+)
 
-# CSS for Leonardo AI Style & SVG Icons
+# ================= SESSION STATE =================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "show_plus" not in st.session_state:
+    st.session_state.show_plus = False
+
+# ================= PREMIUM THEME =================
 st.markdown("""
 <style>
-    .stApp { background-color: #0d0d0f !important; }
-    
-    /* Bottom Rectangular Board */
-    .bottom-board {
-        position: fixed;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 92%;
-        max-width: 600px;
-        background: #1a1a1c;
-        border-radius: 28px;
-        padding: 12px 22px;
-        border: 1px solid #2d2d2f;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        z-index: 10000;
-    }
+/* ---- BACKGROUND ---- */
+body {
+    background: radial-gradient(circle at top, #0b1220, #020617);
+}
 
-    .icon-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+/* ---- CONTAINER ---- */
+.chat-container {
+    max-width: 880px;
+    margin: auto;
+    padding-bottom: 140px;
+}
 
-    .group { display: flex; align-items: center; gap: 22px; }
+/* ---- MESSAGE ---- */
+.msg {
+    padding: 14px 18px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.5;
+    animation: fadeIn 0.25s ease-in;
+}
+.user {
+    background: #0f172a;
+    border-left: 4px solid #38bdf8;
+    color: #e5e7eb;
+}
+.bot {
+    background: #111827;
+    border-left: 4px solid #a78bfa;
+    color: #e5e7eb;
+}
 
-    .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        fill: #b0b0b0; /* Icon color */
-    }
-    .icon-btn:hover { fill: white; }
+/* ---- INPUT BOARD ---- */
+.input-wrap {
+    position: fixed;
+    bottom: 18px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+}
 
-    .fast-badge {
-        background: #2a2a2c;
-        border: 1px solid #3d3d3f;
-        color: white;
-        padding: 5px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-family: sans-serif;
-    }
+.input-board {
+    width: 880px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 22px;
+    padding: 10px;
+    box-shadow: 0 0 0 1px #1f2937;
+}
 
-    .sparkle-box {
-        background: #3d3d3f;
-        padding: 8px;
-        border-radius: 50%;
-        display: flex;
-    }
+/* ---- BUTTONS ---- */
+.icon-btn {
+    background: #1e293b;
+    border: none;
+    color: white;
+    font-size: 18px;
+    padding: 9px 13px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.icon-btn:hover {
+    background: #334155;
+}
 
-    /* Pop-up Menu */
-    #plus-menu {
-        display: none;
-        position: absolute;
-        bottom: 80px;
-        left: 15px;
-        background: #1a1a1c;
-        border: 1px solid #3d3d3f;
-        border-radius: 18px;
-        padding: 10px;
-        width: 160px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .menu-item {
-        padding: 10px;
-        color: white;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: sans-serif;
-    }
-    .menu-item:hover { background: #2d2d2f; border-radius: 10px; }
+/* ---- PLUS PANEL ---- */
+.plus-panel {
+    background: #020617;
+    border-radius: 16px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 0 0 1px #1f2937;
+}
+.plus-item {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #0f172a;
+    margin-bottom: 8px;
+    color: #e5e7eb;
+    font-size: 14px;
+}
 
-    /* Hide Streamlit elements */
-    header, footer { visibility: hidden; }
+/* ---- ANIMATION ---- */
+@keyframes fadeIn {
+    from { opacity:0; transform:translateY(6px); }
+    to { opacity:1; transform:translateY(0); }
+}
 </style>
-
-<div class="bottom-board">
-    <div id="plus-menu">
-        <div class="menu-item">📷 Camera</div>
-        <div class="menu-item">🖼️ Gallery</div>
-        <div class="menu-item">📂 File</div>
-        <div class="menu-item">☁️ Drive</div>
-    </div>
-
-    <div class="icon-row">
-        <div class="group">
-            <button class="icon-btn" onclick="togglePlus()">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-            <button class="icon-btn">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6;"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
-            </button>
-        </div>
-
-        <div class="group">
-            <div class="fast-badge">Fast</div>
-            <button class="icon-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-            </button>
-            <div class="sparkle-box">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    function togglePlus() {
-        var m = document.getElementById("plus-menu");
-        m.style.display = (m.style.display === "block") ? "none" : "block";
-    }
-</script>
 """, unsafe_allow_html=True)
 
-# Streamlit Logic
-st.title("Astra GPT")
-st.write("---")
-st.info("AI created by Mohammad Sartaj")
+# ================= CHAT =================
+st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
 
-user_query = st.chat_input("Ask Astra GPT...")
-if user_query:
-    st.write(f"Sartaj's AI Response to: {user_query}")
+for m in st.session_state.messages:
+    cls = "user" if m["role"] == "user" else "bot"
+    st.markdown(
+        f"<div class='msg {cls}'>{m['content']}</div>",
+        unsafe_allow_html=True
+    )
+
+# ================= PLUS PANEL =================
+if st.session_state.show_plus:
+    st.markdown("""
+    <div class="plus-panel">
+        <div class="plus-item">📷 Camera</div>
+        <div class="plus-item">🖼️ Gallery</div>
+        <div class="plus-item">📁 File</div>
+        <div class="plus-item">☁️ Drive</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= INPUT FIXED BOARD =================
+st.markdown("<div class='input-wrap'>", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1,6,1])
+
+with col1:
+    if st.button("➕"):
+        st.session_state.show_plus = not st.session_state.show_plus
+
+with col2:
+    text = st.text_area(
+        "",
+        placeholder="Message Bharat Astra GPT…",
+        height=55,
+        label_visibility="collapsed"
+    )
+
+with col3:
+    send = st.button("✨")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ================= SEND LOGIC =================
+if send and text.strip():
+    st.session_state.messages.append({
+        "role": "user",
+        "content": text
+    })
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": "🤖 Ultra-Pro response placeholder."
+    })
+    st.session_state.show_plus = False
+    st.rerun()
