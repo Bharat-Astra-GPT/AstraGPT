@@ -1,185 +1,180 @@
 import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
 
-# Mohammad Sartaj's Astra GPT Setup
-st.set_page_config(
-    page_title="Bharat Astra GPT",
-    page_icon="✨",
-    layout="wide"
-)
+# ================= CONFIG & SECURITY =================
+st.set_page_config(page_title="Bharat Astra GPT", page_icon="✨", layout="wide")
 
-# ================= LEONARDO PREMIUM DARK UI =================
+# Basic Security: Prevent clickjacking and hide streamlit branding
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    /* Privacy Shield */
+    .reportview-container { background: #0d0d0f; }
+    </style>
+""", unsafe_allow_html=True)
+
+# ================= STATE MANAGEMENT =================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "plus_menu" not in st.session_state:
+    st.session_state.plus_menu = False
+if "dash_menu" not in st.session_state:
+    st.session_state.dash_menu = False
+
+# ================= PREMIUM UI CSS =================
 st.markdown("""
 <style>
-    /* Leonardo AI Deep Dark Background */
-    .stApp {
-        background-color: #0d0d0f !important;
-        color: white;
-    }
-
-    /* Message Styling */
-    .chat-container { padding-bottom: 150px; }
-    .msg-box {
-        padding: 15px 20px;
-        border-radius: 15px;
-        margin-bottom: 15px;
-        max-width: 85%;
-        font-family: 'Inter', sans-serif;
-    }
-    .user-msg { background: #1a1a1c; border: 1px solid #2d2d2f; margin-left: auto; }
-    .bot-msg { background: #0d0d0f; border: 1px solid #1a1a1c; margin-right: auto; color: #d1d1d1; }
-
-    /* The Main Rectangular Board (Fixed at Bottom) */
-    .bottom-board {
+    .stApp { background-color: #0d0d0f; color: white; }
+    
+    /* Floating Bottom Board */
+    .fixed-footer {
         position: fixed;
-        bottom: 25px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
-        width: 92%;
-        max-width: 700px;
+        width: 95%;
+        max-width: 600px;
         background: #1a1a1c;
         border-radius: 30px;
-        padding: 10px 20px;
+        padding: 15px 20px;
         border: 1px solid #2d2d2f;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        z-index: 9999;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        z-index: 999;
     }
 
-    .icon-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .group { display: flex; align-items: center; gap: 18px; }
-
-    /* Button & Icon Styling */
-    .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #b0b0b0;
-        display: flex;
-        align-items: center;
-        transition: 0.2s;
-    }
-    .icon-btn:hover { color: white; }
-
-    .fast-badge {
-        background: #2a2a2c;
-        border: 1px solid #3d3d3f;
-        color: #ffffff;
-        padding: 4px 14px;
+    /* Input Box Gemini Style */
+    .input-wrapper {
+        background: #252527;
         border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .sparkle-btn {
-        background: #3d3d3f;
-        padding: 8px;
-        border-radius: 50%;
         display: flex;
         align-items: center;
-        justify-content: center;
+        padding: 5px 15px;
+        margin-bottom: 15px;
+        border: 1px solid #3d3d3f;
+    }
+    
+    /* Plus Pop-up (Camera/Gallery) */
+    .pop-card {
+        background: #ffffff;
+        border-radius: 25px;
+        padding: 25px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        position: absolute;
+        bottom: 160px;
+        width: 100%;
+        left: 0;
+        animation: slideUp 0.3s ease-out;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
     }
 
-    /* Pop-up Menu Logic */
-    .popup-menu {
-        position: absolute;
-        bottom: 80px;
-        left: 10px;
+    /* Dashboard Pop-up (Equal-to/3-line) */
+    .dash-card {
         background: #1a1a1c;
         border: 1px solid #3d3d3f;
         border-radius: 20px;
-        padding: 10px;
-        width: 180px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        padding: 15px;
+        position: absolute;
+        bottom: 85px;
+        left: 60px;
+        width: 200px;
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 10px;
+        animation: fadeIn 0.2s ease;
     }
 
-    .menu-item {
-        padding: 10px 15px;
-        color: white;
-        font-size: 14px;
-        border-radius: 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    .menu-item:hover { background: #2d2d2f; }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Hide Streamlit elements */
-    header, footer, .stChatInputContainer { visibility: hidden; position: absolute; }
+    .menu-item { color: #1c1e21; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .icon-circle { background: #e4e6eb; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-size: 22px; }
+    
+    .dash-link { color: #d1d1d1; padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    .dash-link:hover { background: #2d2d2f; color: white; }
+
+    /* Hide Streamlit components */
+    .stButton button { background: transparent; border: none; color: white; padding: 0; }
+    .stButton button:hover { color: #fff; background: transparent; }
 </style>
 """, unsafe_allow_html=True)
 
-# ================= SESSION STATE =================
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "show_menu" not in st.session_state:
-    st.session_state.show_menu = False
+# ================= MAIN CHAT AREA =================
+st.markdown(f"<h3 style='text-align:center; color:#888;'>Astra GPT</h3>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; color:#555; margin-top:-15px;'>AI by Mohammad Sartaj</p>", unsafe_allow_html=True)
 
-# ================= CHAT DISPLAY =================
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-for m in st.session_state.messages:
-    cls = "user-msg" if m["role"] == "user" else "bot-msg"
-    st.markdown(f'<div class="msg-box {cls}">{m["content"]}</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+# Scrollable Chat
+chat_container = st.container()
+with chat_container:
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
 
-# ================= BOTTOM INTERFACE =================
+# ================= DYNAMIC MENUS =================
 
-# 1. Pop-up Menu (Sirf tab dikhega jab Plus click ho)
-if st.session_state.show_menu:
+# 1. Dashboard Menu (Research, Thinking, etc.)
+if st.session_state.dash_menu:
     st.markdown("""
-    <div class="bottom-board" style="border:none; background:transparent; box-shadow:none;">
-        <div class="popup-menu">
-            <div class="menu-item">📷 Camera</div>
-            <div class="menu-item">🖼️ Gallery</div>
-            <div class="menu-item">📂 File</div>
-            <div class="menu-item">☁️ Drive</div>
+    <div class="fixed-footer" style="background:transparent; border:none; box-shadow:none;">
+        <div class="dash-card">
+            <div class="dash-link">🎨 Create Image</div>
+            <div class="dash-link">🔍 Research</div>
+            <div class="dash-link">💡 Thinking</div>
+            <div class="dash-link">⚙️ Settings</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Main Rectangular Board
+# 2. Plus Menu (Camera, Gallery, etc.)
+if st.session_state.plus_menu:
+    st.markdown("""
+    <div class="fixed-footer" style="background:transparent; border:none; box-shadow:none;">
+        <div class="pop-card">
+            <div class="menu-item"><div class="icon-circle">📷</div>Camera</div>
+            <div class="menu-item"><div class="icon-circle">🖼️</div>Gallery</div>
+            <div class="menu-item"><div class="icon-circle">📎</div>Files</div>
+            <div class="menu-item"><div class="icon-circle">☁️</div>Drive</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ================= FOOTER BOARD =================
+st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
+
+# Part A: Input Box & Send
 with st.container():
-    # Board UI with SVGs
-    st.markdown(f"""
-    <div class="bottom-board">
-        <div class="icon-row">
-            <div class="group">
-                <div style="color:white; cursor:pointer;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
-                <div style="opacity:0.6;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></div>
-            </div>
-            <div class="group">
-                <div class="fast-badge">Fast</div>
-                <div style="color:white;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg></div>
-                <div class="sparkle-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg></div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Invisible Streamlit Buttons (Taaki click kaam kare)
-    cols = st.columns([0.8, 6.2, 1, 1, 1])
-    with cols[0]:
-        if st.button(" ", key="plus_btn", help="Toggle Menu"):
-            st.session_state.show_menu = not st.session_state.show_menu
-            st.rerun()
-    with cols[1]:
-        user_input = st.text_input("", placeholder="Ask Bharat Astra GPT...", label_visibility="collapsed")
-    with cols[4]:
-        if st.button("➤", key="send_btn"):
+    c_in, c_send = st.columns([9, 1])
+    with c_in:
+        user_input = st.text_input("", placeholder="Ask Bharat Astra GPT...", key="main_input", label_visibility="collapsed")
+    with c_send:
+        if st.button("➤", key="send_btn_real"):
             if user_input:
                 st.session_state.messages.append({"role": "user", "content": user_input})
-                st.session_state.messages.append({"role": "assistant", "content": f"Astra AI created by Mohammad Sartaj: Recieved your query '{user_input}'"})
-                st.session_state.show_menu = False
+                # AI Logic Placeholder
+                st.session_state.messages.append({"role": "assistant", "content": f"Sartaj's Astra AI: I am processing your request: {user_input}"})
+                st.session_state.plus_menu = False
+                st.session_state.dash_menu = False
                 st.rerun()
 
-# ================= INFO =================
-st.sidebar.title("Astra GPT")
-st.sidebar.info("Developer: Mohammad Sartaj")
-    
+# Part B: Icons Row
+b1, b2, b3, b4, b5 = st.columns([1, 1, 4, 1, 1])
+with b1:
+    if st.button("＋", key="p_btn"):
+        st.session_state.plus_menu = not st.session_state.plus_menu
+        st.session_state.dash_menu = False
+        st.rerun()
+with b2:
+    # 3-line Dashboard Toggle
+    if st.button("≡", key="d_btn"):
+        st.session_state.dash_menu = not st.session_state.dash_menu
+        st.session_state.plus_menu = False
+        st.rerun()
+with b4:
+    st.button("🎤", key="m_btn")
+with b5:
+    st.markdown("<div style='background:#3d3d3f; padding:5px; border-radius:50%; text-align:center;'>✨</div>", unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
