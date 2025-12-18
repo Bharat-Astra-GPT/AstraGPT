@@ -1,170 +1,144 @@
 import streamlit as st
-from streamlit_chat import message  # Streamlit chat style
-import openai
-from PIL import Image
-import io
-import time
-import pdfplumber
-import docx
 
-# ================= PAGE CONFIG =================
-st.set_page_config(
-    page_title="NEXT LEVEL ASTRA 🚀",
-    page_icon="🚀",
-    layout="wide"
-)
+# Mohammad Sartaj's Astra GPT - Advanced UI
+st.set_page_config(page_title="Astra GPT", layout="wide")
 
-# ================= SESSION STATE =================
-if "chat" not in st.session_state:
-    st.session_state.chat = []
+# State Management
+if "plus_open" not in st.session_state: st.session_state.plus_open = False
+if "dash_open" not in st.session_state: st.session_state.dash_open = False
+if "messages" not in st.session_state: st.session_state.messages = []
 
-if "mode" not in st.session_state:
-    st.session_state.mode = "Fast"
-
-if "show_plus" not in st.session_state:
-    st.session_state.show_plus = False
-
-if "show_dashboard" not in st.session_state:
-    st.session_state.show_dashboard = False
-
-# ================= OPENAI SETUP =================
-openai.api_key = "YOUR_OPENAI_API_KEY"  # Replace with your OpenAI API key
-
-# ================= CSS =================
+# --- CSS: FIXED PREMIUM INTERFACE ---
 st.markdown("""
 <style>
-.stApp {background:#0d0d0f; color:white;}
-.header {text-align:center; margin-bottom:10px;}
-.header h1{margin:0; font-weight:600;}
-.header p{opacity:0.6; margin:0;}
-.user {background:#1a1a1c; padding:12px 16px; border-radius:18px; margin:8px 0; text-align:right;}
-.ai {background:#111; padding:12px 16px; border-radius:18px; margin:8px 0;}
-.bottom {position:fixed; bottom:15px; left:50%; transform:translateX(-50%); width:95%; max-width:850px; background:#1a1a1c; border-radius:28px; padding:12px; border:1px solid #2d2d2f;}
-.row{display:flex;align-items:center;gap:10px;}
-.input{flex:1; background:transparent; border:none; color:white; font-size:16px; outline:none;}
-.icon{cursor:pointer; font-size:20px; padding:6px 10px;}
-.send{background:linear-gradient(135deg,#4facfe,#00f2fe); border:none; color:black; padding:8px 14px; border-radius:50%; font-size:18px; cursor:pointer;}
-.popup{background:#f0f2f5; color:black; border-radius:16px; padding:15px; margin:10px auto; max-width:500px;}
+    .stApp { background-color: #0d0d0f; color: white; }
+    header, footer, .stSidebar { visibility: hidden; }
+
+    /* Main Floating Container */
+    .main-footer-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95%;
+        max-width: 500px;
+        background: #1a1a1c;
+        border-radius: 25px;
+        padding: 10px;
+        border: 1px solid #2d2d2f;
+        z-index: 9999;
+    }
+
+    /* Input Box Inside Container */
+    .stTextInput input {
+        background: #252527 !important;
+        border: none !important;
+        color: white !important;
+        border-radius: 15px !important;
+        padding: 12px !important;
+    }
+
+    /* Plus Pop-up (Camera/Gallery) */
+    .attachment-card {
+        position: absolute;
+        bottom: 120%;
+        left: 0;
+        width: 100%;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 15px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    /* Dashboard Pop-up */
+    .dashboard-card {
+        position: absolute;
+        bottom: 120%;
+        right: 0;
+        width: 220px;
+        background: rgba(30, 30, 32, 0.98);
+        border: 1px solid #3d3d3f;
+        border-radius: 15px;
+        padding: 10px;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .menu-item { text-align: center; color: #333; font-size: 11px; font-weight: bold; }
+    .circle-icon { background: #f0f2f5; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-size: 18px; }
+    
+    .dash-btn { color: #d1d1d1; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+    .dash-btn:hover { background: #2d2d2f; color: white; }
 </style>
 """, unsafe_allow_html=True)
 
-# ================= HEADER =================
-st.markdown("""
-<div class="header">
-    <h1>NEXT LEVEL ASTRA 🚀</h1>
-    <p>By Mohammad Sartaj</p>
-</div>
-""", unsafe_allow_html=True)
+# --- CHAT DISPLAY ---
+st.markdown("<h4 style='text-align:center; opacity:0.8;'>Astra GPT</h4>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; font-size:12px; opacity:0.5; margin-top:-15px;'>AI by Mohammad Sartaj</p>", unsafe_allow_html=True)
 
-# ================= CHAT DISPLAY =================
-for msg in st.session_state.chat:
-    if msg["role"] == "user":
-        st.markdown(f"<div class='user'>{msg['text']}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<div class='ai'>{msg['text']}</div>", unsafe_allow_html=True)
+for m in st.session_state.messages:
+    with st.chat_message(m["role"]):
+        st.write(m["content"])
 
-# ================= POPUPS =================
-if st.session_state.show_plus:
+# --- THE DYNAMIC INTERFACE ---
+st.markdown('<div class="main-footer-container">', unsafe_allow_html=True)
+
+# 1. Plus Pop-up Card
+if st.session_state.plus_open:
     st.markdown("""
-    <div class="popup">
-    📷 Camera<br><br>
-    🖼 Gallery<br><br>
-    📎 Files<br><br>
-    ☁️ Drive
+    <div class="attachment-card">
+        <div class="menu-item"><div class="circle-icon">📷</div>Camera</div>
+        <div class="menu-item"><div class="circle-icon">🖼️</div>Gallery</div>
+        <div class="menu-item"><div class="circle-icon">📎</div>Files</div>
+        <div class="menu-item"><div class="circle-icon">☁️</div>Drive</div>
     </div>
     """, unsafe_allow_html=True)
 
-if st.session_state.show_dashboard:
+# 2. Dashboard Pop-up Card
+if st.session_state.dash_open:
     st.markdown("""
-    <div class="popup">
-    ⚡ Fast Mode<br><br>
-    🔍 Research Mode<br><br>
-    🧠 Thinking Mode<br><br>
-    🎨 Create Image<br><br>
-    🧹 Clear Chat
+    <div class="dashboard-card">
+        <div style="font-size:12px; margin-bottom:8px; opacity:0.6; padding-left:10px;">Dashboard ☰</div>
+        <div class="dash-btn">🖼️ Create Images</div>
+        <div class="dash-btn">🔍 Research</div>
+        <div class="dash-btn">💡 Thinking</div>
+        <div class="dash-btn">⚙️ Settings</div>
     </div>
     """, unsafe_allow_html=True)
 
-# ================= INPUT =================
-query = st.text_input("", placeholder="Ask Astra AI...")
+# 3. Input & Send Area (Gemini Style)
+col_text, col_send = st.columns([8.5, 1.5])
+with col_text:
+    user_input = st.text_input("", placeholder="Ask Bharat Astra GPT...", key="main_input", label_visibility="collapsed")
+with col_send:
+    if st.button("❯", key="send_logic"): 
+        if user_input:
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            st.session_state.messages.append({"role": "assistant", "content": f"Astra AI (Sartaj): Processing '{user_input}'..."})
+            st.session_state.plus_open = False
+            st.session_state.dash_open = False
+            st.rerun()
 
-# ================= FILE UPLOAD =================
-uploaded_file = st.file_uploader("Upload a file", type=["txt", "pdf", "png", "jpg", "docx"])
-if uploaded_file:
-    if uploaded_file.type == "application/pdf":
-        with pdfplumber.open(uploaded_file) as pdf:
-            text = "\n".join([page.extract_text() for page in pdf.pages if page.extract_text()])
-            st.session_state.chat.append({"role":"ai","text":f"PDF uploaded: {uploaded_file.name}\nContent:\n{text[:500]}..."})
-    elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        doc = docx.Document(uploaded_file)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        st.session_state.chat.append({"role":"ai","text":f"DOCX uploaded: {uploaded_file.name}\nContent:\n{text[:500]}..."})
-    else:
-        st.session_state.chat.append({"role":"ai","text":f"File received: {uploaded_file.name}"})
-
-# ================= VOICE INPUT (Experimental) =================
-voice_query = st.text_area("Or paste your voice-to-text here (Android/MP3 supported)")
-
-# ================= AI RESPONSE =================
-def ai_response(text):
-    try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": text}]
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return f"⚠️ Error: {e}"
-
-# ================= SEND =================
-if st.button("Send") or query:
-    user_text = query if query else voice_query
-    if user_text:
-        st.session_state.chat.append({"role":"user","text":user_text})
-        reply = ai_response(user_text)
-        st.session_state.chat.append({"role":"ai","text":reply})
-        st.experimental_rerun()
-
-# ================= BOTTOM BAR =================
-st.markdown("""
-<div class="bottom">
-  <div class="row">
-    <span class="icon">＋</span>
-    <span class="icon">☰</span>
-    <input class="input" placeholder="Ask Astra AI...">
-    <span class="icon">🎤</span>
-    <button class="send">➤</button>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ================= CONTROLS =================
-c1, c2, c3 = st.columns(3)
+# 4. Bottom Icons Row
+c1, c2, c3, c4 = st.columns([1, 1, 5, 1.5])
 with c1:
-    if st.button("➕ Attach"):
-        st.session_state.show_plus = not st.session_state.show_plus
-        st.session_state.show_dashboard = False
-        st.experimental_rerun()
+    if st.button("＋", key="p_btn"):
+        st.session_state.plus_open = not st.session_state.plus_open
+        st.session_state.dash_open = False
+        st.rerun()
 with c2:
-    if st.button("☰ Dashboard"):
-        st.session_state.show_dashboard = not st.session_state.show_dashboard
-        st.session_state.show_plus = False
-        st.experimental_rerun()
-with c3:
-    mode = st.selectbox("Mode", ["Fast","Research","Thinking","Image"])
-    st.session_state.mode = mode
+    if st.button("≡", key="d_btn"): # Dashboard Trigger
+        st.session_state.dash_open = not st.session_state.dash_open
+        st.session_state.plus_open = False
+        st.rerun()
+with c4:
+    st.button("🎤", key="m_btn")
 
-# ================= IMAGE GENERATION =================
-if st.session_state.mode == "Image":
-    prompt = st.text_input("Enter image prompt")
-    if st.button("Generate Image"):
-        try:
-            img_result = openai.Image.create(
-                prompt=prompt,
-                n=1,
-                size="512x512"
-            )
-            img_url = img_result['data'][0]['url']
-            st.image(img_url)
-        except Exception as e:
-            st.error(f"Image generation error: {e}")
+st.markdown('</div>', unsafe_allow_html=True)
