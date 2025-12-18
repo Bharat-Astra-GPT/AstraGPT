@@ -1,7 +1,5 @@
 streamlit
-groq
+streamlit-extras
+pillow
 google-generativeai
-fpdf2
-Pillow
-requests
-
+python-dotenv
